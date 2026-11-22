@@ -165,6 +165,7 @@ if detection_mode == "Image Detection":
             )
 
 
+
 # ==========================================
 # 6. VIDEO DETECTION
 # ==========================================
@@ -184,182 +185,169 @@ elif detection_mode == "Video Detection":
 
         if st.button("Run Video Detection", type="primary"):
 
-            with tempfile.TemporaryDirectory() as temp_dir:
-
-                temp_dir = Path(temp_dir)
-
-                input_path = temp_dir / (
-                    "input" + Path(uploaded_video.name).suffix.lower()
-                )
-
-                raw_output_path = temp_dir / "annotated_video.mp4"
-                output_path = temp_dir / "annotated_video_h264.mp4"
-
-                # Save uploaded video temporarily
-                input_path.write_bytes(uploaded_video.getvalue())
-
-                cap = cv2.VideoCapture(str(input_path))
-
-                if not cap.isOpened():
-                    st.error("Unable to open the uploaded video.")
-                    st.stop()
-
-                fps = cap.get(cv2.CAP_PROP_FPS)
-                width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-                if fps <= 0:
-                    fps = 25.0
-
-                if width <= 0 or height <= 0:
-                    cap.release()
-                    st.error("Invalid video dimensions.")
-                    st.stop()
-
-                # Initialize OpenCV video writer
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-
-                writer = cv2.VideoWriter(
-                    str(raw_output_path),
-                    fourcc,
-                    fps,
-                    (width, height)
-                )
-
-                if not writer.isOpened():
-                    cap.release()
-                    st.error("Unable to create the intermediate video.")
-                    st.stop()
-
-                progress = st.progress(0)
-                status = st.empty()
-
-                frame_count = 0
+            with st.spinner("Processing video..."):
 
                 try:
+                    with tempfile.TemporaryDirectory() as temp_dir:
 
-                    while True:
+                        temp_dir = Path(temp_dir)
 
-                        success, frame = cap.read()
-
-                        if not success:
-                            break
-
-                        # Run YOLO inference
-                        result = model.predict(
-                            source=frame,
-                            conf=confidence,
-                            imgsz=640,
-                            verbose=False
-                        )[0]
-
-                        # Draw bounding boxes
-                        annotated_frame = result.plot()
-
-                        # Write annotated frame
-                        writer.write(annotated_frame)
-
-                        frame_count += 1
-
-                        if total_frames > 0:
-                            progress.progress(
-                                min(frame_count / total_frames, 1.0)
-                            )
-
-                        status.write(
-                            f"Processed {frame_count} / "
-                            f"{total_frames} frames"
+                        input_path = temp_dir / (
+                            "input" + Path(uploaded_video.name).suffix.lower()
                         )
 
-                finally:
-                    cap.release()
-                    writer.release()
+                        raw_output_path = temp_dir / "annotated_video.mp4"
+                        output_path = temp_dir / "annotated_video_h264.mp4"
 
-                # Validate frame processing
-                if frame_count == 0:
-                    st.error("No video frames could be processed.")
-                    st.stop()
+                        # Save uploaded video
+                        input_path.write_bytes(uploaded_video.getvalue())
 
-                # Validate intermediate video
-                if (
-                    not raw_output_path.exists()
-                    or raw_output_path.stat().st_size == 0
-                ):
-                    st.error(
-                        "OpenCV failed to generate the intermediate video."
+                        cap = cv2.VideoCapture(str(input_path))
+
+                        if not cap.isOpened():
+                            raise RuntimeError(
+                                "Unable to open the uploaded video."
+                            )
+
+                        fps = cap.get(cv2.CAP_PROP_FPS)
+                        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+                        if fps <= 0:
+                            fps = 25.0
+
+                        if width <= 0 or height <= 0:
+                            cap.release()
+                            raise RuntimeError("Invalid video dimensions.")
+
+                        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+
+                        writer = cv2.VideoWriter(
+                            str(raw_output_path),
+                            fourcc,
+                            fps,
+                            (width, height)
+                        )
+
+                        if not writer.isOpened():
+                            cap.release()
+                            raise RuntimeError(
+                                "Unable to create the intermediate video."
+                            )
+
+                        progress = st.progress(0)
+                        status = st.empty()
+
+                        frame_count = 0
+
+                        try:
+                            while True:
+
+                                success, frame = cap.read()
+
+                                if not success:
+                                    break
+
+                                result = model.predict(
+                                    source=frame,
+                                    conf=confidence,
+                                    imgsz=640,
+                                    verbose=False
+                                )[0]
+
+                                annotated_frame = result.plot()
+
+                                writer.write(annotated_frame)
+
+                                frame_count += 1
+
+                                if total_frames > 0:
+                                    progress.progress(
+                                        min(frame_count / total_frames, 1.0)
+                                    )
+
+                                status.write(
+                                    f"Processed {frame_count} / "
+                                    f"{total_frames} frames"
+                                )
+
+                        finally:
+                            cap.release()
+                            writer.release()
+
+                        if frame_count == 0:
+                            raise RuntimeError(
+                                "No video frames could be processed."
+                            )
+
+                        if (
+                            not raw_output_path.exists()
+                            or raw_output_path.stat().st_size == 0
+                        ):
+                            raise RuntimeError(
+                                "OpenCV failed to generate the intermediate video."
+                            )
+
+                        # ==================================
+                        # FFMPEG H.264 CONVERSION
+                        # ==================================
+
+                        conversion = subprocess.run(
+                            [
+                                "ffmpeg",
+                                "-y",
+                                "-i", str(raw_output_path),
+                                "-c:v", "libx264",
+                                "-preset", "ultrafast",
+                                "-crf", "23",
+                                "-pix_fmt", "yuv420p",
+                                "-movflags", "+faststart",
+                                str(output_path)
+                            ],
+                            check=True,
+                            capture_output=True,
+                            text=True
+                        )
+
+                        if (
+                            not output_path.exists()
+                            or output_path.stat().st_size == 0
+                        ):
+                            raise RuntimeError(
+                                "FFmpeg did not generate the final video."
+                            )
+
+                        # Read output while temporary directory exists
+                        video_bytes = output_path.read_bytes()
+
+                    # ==================================
+                    # DISPLAY RESULTS
+                    # ==================================
+
+                    st.success("Video detection completed.")
+
+                    st.subheader("Annotated Video")
+
+                    st.video(video_bytes, format="video/mp4")
+
+                    st.metric("Total Frames Processed", frame_count)
+
+                    st.download_button(
+                        "Download Annotated Video",
+                        data=video_bytes,
+                        file_name="ppe_detection_result.mp4",
+                        mime="video/mp4"
                     )
-                    st.stop()
 
-                # ==================================
-                # 7. FFMPEG H.264 CONVERSION
-                # ==================================
-
-                try:
-
-                    conversion = subprocess.run(
-                        [
-                            "ffmpeg",
-                            "-y",
-                            "-i", str(raw_output_path),
-                            "-c:v", "libx264",
-                            "-preset", "fast",
-                            "-crf", "23",
-                            "-pix_fmt", "yuv420p",
-                            "-movflags", "+faststart",
-                            str(output_path)
-                        ],
-                        check=True,
-                        capture_output=True,
-                        text=True
+                    st.caption(
+                        "The processed video does not retain the original audio."
                     )
-
-                except FileNotFoundError:
-
-                    st.error(
-                        "FFmpeg was not found. "
-                        "Make sure FFmpeg is installed and available in PATH."
-                    )
-                    st.stop()
 
                 except subprocess.CalledProcessError as error:
+                    st.error("FFmpeg conversion failed.")
+                    st.code(error.stderr[-4000:])
 
-                    st.error("FFmpeg video conversion failed.")
-
-                    st.code(error.stderr[-3000:])
-
-                    st.stop()
-
-                # Validate final H.264 video
-                if (
-                    not output_path.exists()
-                    or output_path.stat().st_size == 0
-                ):
-                    st.error("The final H.264 video could not be generated.")
-                    st.stop()
-
-                # Read video before temporary directory is removed
-                video_bytes = output_path.read_bytes()
-
-            # ==================================
-            # 8. DISPLAY AND DOWNLOAD VIDEO
-            # ==================================
-
-            st.success("Video detection completed successfully.")
-
-            st.subheader("Annotated Video")
-
-            st.video(video_bytes, format="video/mp4")
-
-            st.metric("Total Frames Processed", frame_count)
-
-            st.download_button(
-                "Download Annotated Video",
-                data=video_bytes,
-                file_name="ppe_detection_result.mp4",
-                mime="video/mp4"
-            )
-
-            st.caption(
-                "Note: The processed video does not retain the original audio."
-            )
+                except Exception as error:
+                    st.error("Video detection failed.")
+                    st.exception(error)
