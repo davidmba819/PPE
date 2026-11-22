@@ -1,4 +1,3 @@
-
 # Dataset files
 *.zip
 *.7z
@@ -15,6 +14,9 @@ data/
 *.onnx
 *.engine
 *.torchscript
+
+# Keep the selected model in GitHub
+!models/yolo11n_ppe_best.pt
 
 # Training outputs
 runs/
@@ -40,12 +42,5 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Model weights and exported models
-*.pt
-*.pth
-*.onnx
-*.engine
-*.torchscript
-
-# Keep the selected model in GitHub
-!models/yolo11n_ppe_best.pt
+# Sample images
+assets/sample_images/
