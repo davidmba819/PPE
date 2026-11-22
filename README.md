@@ -1,75 +1,51 @@
 # PPE Detection System
 
+A computer vision application for detecting people and personal protective equipment (PPE) in construction-site images and videos using YOLO11 Nano.
+
+**Live Application:** https://ppeguard.streamlit.app/  
+**GitHub Repository:** https://github.com/davidmba819/PPE
+
 ## 1. Project Overview
 
-The PPE Detection System is a computer vision application that uses a fine-tuned YOLO11 Nano object detection model to identify people and personal protective equipment (PPE) in construction-site images and videos.
+The PPE Detection System uses a fine-tuned YOLO11 Nano object detection model to identify seven classes in construction-site images and videos.
 
-The system detects seven object classes and provides an interface for users to upload images or videos, perform object detection, visualize annotated results and download the outputs.
+The application allows users to:
+- Upload construction-site images and videos.
+- Adjust the detection confidence threshold.
+- Run object detection using YOLO11.
+- View annotated images and videos.
+- Inspect detected classes and confidence scores.
+- Download detection results.
 
-The project covers the complete workflow from dataset preparation and model experimentation to local application development.
-
-### Project Objectives
-
-- Develop and evaluate YOLO object detection models for construction-site imagery.
-- Compare YOLOv8 Nano, YOLO11 Nano and YOLO26 Nano.
-- Select a suitable trained model based on evaluation results.
-- Develop an interactive application using Streamlit.
-- Support image and video object detection.
-- Package and deploy the application.
+The project covers dataset preparation, model experimentation, evaluation, application development and deployment.
 
 ## 2. Technology Stack
 
-### Development Environment
-
 | Technology | Purpose |
 |---|---|
-| Python 3.14.6 | Main programming language |
-| uv | Python project and dependency management |
-| VS Code | Local development environment |
-| Git and GitHub | Version control and source-code hosting |
-| Google Colab | Model experimentation and GPU training |
-| Google Drive | Dataset and model artifact storage |
-
-### Installed Python Dependencies
-
-| Library | Purpose |
-|---|---|
-| Ultralytics | YOLO model loading and inference |
+| Python 3.14 | Programming language |
 | PyTorch | Deep learning framework |
-| TorchVision | Computer vision utilities |
-| NumPy | Numerical operations and array manipulation |
-| OpenCV (opencv-python-headless) | Image and video processing |
-| Pillow | Image loading and manipulation |
-| Pandas | Detection results and tabular presentation |
-| Streamlit | Interactive web application |
-| Pytest | Application testing |
+| Ultralytics | YOLO model training and inference |
+| OpenCV | Image and video processing |
+| FFmpeg | H.264 video encoding |
+| Streamlit | Interactive application |
+| Pandas | Detection result presentation |
+| Pillow | Image processing |
+| uv | Dependency and environment management |
+| Git and GitHub | Version control |
+| Google Colab | GPU-based model experimentation |
+| Docker | Application containerization |
 
-The main dependencies were installed using:
+## 3. Dataset
 
-```bash
-uv add ultralytics opencv-python-headless pandas pillow streamlit
-```
-
-Development dependency:
-
-```bash
-uv add --dev pytest
-```
-
-PyTorch, TorchVision and NumPy were resolved as dependencies of the Ultralytics installation.
-
-## 3. Dataset Preparation
-
-### Dataset Source
-
-The project uses the Roboflow Construction Hazard Detection dataset, version 97.
+**Source:** Roboflow Construction Hazard Detection, Version 97.
 
 The original dataset contained 11 classes. Seven classes were selected for this project.
 
-### Selected Classes
+### Selected classes
 
-| Class ID | Class Name |
-|---|---|
+| Class ID | Class name |
+|---:|---|
 | 0 | Hardhat |
 | 1 | Mask |
 | 2 | NO-Hardhat |
@@ -78,52 +54,45 @@ The original dataset contained 11 classes. Seven classes were selected for this 
 | 5 | Person |
 | 6 | Safety Vest |
 
-The following classes were excluded:
+Safety Cone, Machinery, Utility Pole and Vehicle were excluded.
 
-- Safety Cone
-- Machinery
-- Utility Pole
-- Vehicle
+### Dataset preparation
 
-### Dataset Preparation Results
-
-| Description | Result |
+| Description | Count |
 |---|---:|
 | Original images | 6,689 |
 | Original annotation files | 6,689 |
 | Empty annotation files identified | 156 |
-| Images in prepared dataset | 4,280 |
+| Prepared images | 4,280 |
 | Retained bounding boxes | 34,176 |
-| Images excluded during preparation | 2,409 |
+| Images excluded | 2,409 |
 
-The prepared dataset was divided into training, validation and testing subsets.
+### Dataset split
 
 | Subset | Images |
 |---|---:|
 | Training | 2,996 |
 | Validation | 641 |
 | Testing | 643 |
-| Total | 4,280 |
+| **Total** | **4,280** |
 
-Multilabel stratification was used for the split.
-
-Dataset validation checked image-label correspondence, class IDs, annotation structure and bounding-box coordinates.
+Multilabel stratification was used for the dataset split. Dataset validation included image-label correspondence, class IDs, annotation structure and bounding-box coordinates.
 
 The original dataset was preserved separately from the prepared dataset.
 
-**Dataset License:** CC BY 4.0. The original dataset source and attribution should be acknowledged when redistributing or publishing the project.
+**Dataset license:** CC BY 4.0. The original dataset source must be appropriately attributed when redistributing or publishing derived work.
 
 ## 4. Model Experimentation
 
-Three Nano object detection models were trained using the same prepared dataset and comparable experimental configurations.
+Three pretrained Nano object detection models were fine-tuned using the same prepared dataset and comparable training configurations.
 
-### Models
+### Models evaluated
 
 1. YOLOv8 Nano
 2. YOLO11 Nano
 3. YOLO26 Nano
 
-### Training Configuration
+### Training configuration
 
 | Parameter | Configuration |
 |---|---|
@@ -133,19 +102,11 @@ Three Nano object detection models were trained using the same prepared dataset 
 | Optimizer | Auto |
 | Early stopping patience | 10 |
 | Random seed | 42 |
-| Device | NVIDIA Tesla T4 |
+| GPU | NVIDIA Tesla T4 |
 | Workers | 2 |
 | Initialization | Pretrained weights |
 
-### Training Results
-
-| Model | Training Time | Parameters |
-|---|---:|---:|
-| YOLOv8 Nano | 0.847 hours | 3.13M |
-| YOLO11 Nano | 1.079 hours | 2.60M |
-| YOLO26 Nano | 1.166 hours | 2.39M |
-
-### Validation Results
+### Validation results
 
 | Metric | YOLOv8 | YOLO11 | YOLO26 |
 |---|---:|---:|---:|
@@ -154,7 +115,7 @@ Three Nano object detection models were trained using the same prepared dataset 
 | mAP@50 | 0.674 | 0.672 | 0.679 |
 | mAP@50–95 | 0.389 | 0.390 | 0.396 |
 
-### Test Results
+### Test results
 
 | Metric | YOLOv8 | YOLO11 | YOLO26 |
 |---|---:|---:|---:|
@@ -163,85 +124,77 @@ Three Nano object detection models were trained using the same prepared dataset 
 | mAP@50 | 0.660 | 0.660 | 0.657 |
 | mAP@50–95 | 0.386 | 0.391 | 0.383 |
 
-### Model Selection
+### Model selection
 
-YOLO11 Nano was selected as the final model.
+YOLO11 Nano was selected as the application's detection model.
 
-The primary selection criterion was test-set mAP@50–95.
+It achieved the highest test mAP@50–95 score of 0.391 among the three evaluated models.
 
-YOLO11 achieved 0.391, the highest result among the three models on the test set.
+The differences between the models were relatively small. YOLO26 achieved higher precision, while YOLOv8 achieved slightly higher recall on the test set.
 
-Although YOLO26 achieved the highest validation precision and mAP scores, its test mAP@50–95 was lower than YOLO11.
+**Evaluation limitation:** All three models were evaluated on the test set, and those results were used in the final model selection. Therefore, the test set was not preserved as a completely independent final evaluation set. This limitation should be considered when interpreting the reported results.
 
-YOLOv8 achieved slightly higher recall on the test set, but its overall localization metric was lower.
+### Selected model artifact
 
-The differences between the models were relatively small. Therefore, YOLO11 was selected as the most suitable model based on the comparative results, not because it decisively outperformed the alternatives.
+`models/yolo11n_ppe_best.pt`
 
-**Evaluation limitation:** All three models were evaluated on the test set, and the test results were used in the final selection. Consequently, the test set was not preserved as a completely independent final evaluation set. This limitation should be acknowledged when interpreting the reported performance.
-
-### Selected Model Artifact
-
-```text
-models/yolo11n_ppe_best.pt
-```
-
-The trained model was copied from the YOLO11 experiment's best checkpoint and committed to the GitHub repository.
-
-## 5. Model Performance and Observations
-
-The models achieved approximately:
-
-- 83–86% validation precision.
-- 60–61% validation recall.
-- 0.67 validation mAP@50.
-- 0.39 validation mAP@50–95.
-
-The results indicate that the models can detect construction-site objects, but detection performance is not yet sufficiently strong for safety-critical deployment.
-
-### Observed Limitations
-
-1. Recall is relatively low, meaning some objects are missed.
-2. Small and distant objects are more difficult to detect.
-3. PPE classification is inconsistent in some scenes.
-4. Overlapping objects can produce challenging detection cases.
-5. Confidence scores vary across objects and image conditions.
-6. The validation and test mAP@50–95 values indicate room for improvement in localization quality.
-
-### Local Inference Performance
-
-During local CPU inference, the selected YOLO11 model produced the following approximate timings:
-
-| Operation | Time |
-|---|---:|
-| Preprocessing | 7.2 ms |
-| Inference | 191.1 ms |
-| Postprocessing | 7.5 ms |
-| Total | 205.8 ms |
-
-This corresponds to approximately 4.9 images per second under the measured test conditions.
-
-This is an initial local performance measurement, not a comprehensive application benchmark.
-
-## 6. Application Development
-
-### Architecture
+## 5. Application Architecture
 
 The application uses a simple Streamlit architecture.
 
-Streamlit handles the user interface and calls the trained YOLO11 model directly.
+Streamlit handles the user interface and invokes the trained YOLO11 model directly. There is no separate API backend.
 
-No separate FastAPI backend is used.
+### Image detection workflow
 
-### Current Project Structure
+1. User uploads an image.
+2. The image is loaded and prepared.
+3. YOLO11 performs inference.
+4. Bounding boxes and class labels are generated.
+5. Detection results are displayed.
+6. The annotated image can be downloaded.
+
+### Video detection workflow
+
+1. User uploads a video.
+2. OpenCV reads the video frames sequentially.
+3. YOLO11 performs inference on each frame.
+4. Annotated frames are generated.
+5. OpenCV writes the intermediate video.
+6. FFmpeg converts the video to H.264.
+7. Streamlit displays the processed video.
+8. The annotated video can be downloaded.
+
+The application does not preserve the original video audio.
+
+## 6. Application Features
+
+### Image Detection
+- JPG, JPEG and PNG uploads.
+- Adjustable confidence threshold.
+- YOLO11 inference.
+- Annotated image visualization.
+- Detection class and confidence display.
+- Annotated image download.
+
+### Video Detection
+- MP4, AVI, MOV and MKV uploads.
+- Sequential frame processing.
+- YOLO11 inference on individual frames.
+- Bounding-box visualization.
+- Processing progress display.
+- H.264 video conversion using FFmpeg.
+- Annotated video playback.
+- Annotated video download.
+
+## 7. Project Structure
 
 ```text
 PPE/
 │
+├── .devcontainer/
+│
 ├── models/
 │   └── yolo11n_ppe_best.pt
-│
-├── assets/
-│   └── sample_images/
 │
 ├── notebooks/
 │   └── model_training.ipynb
@@ -249,136 +202,101 @@ PPE/
 ├── src/
 │   └── app.py
 │
+├── .dockerignore
+├── .gitignore
+├── .python-version
+├── Dockerfile
+├── packages.txt
 ├── pyproject.toml
 ├── uv.lock
-├── .python-version
-├── .gitignore
 └── README.md
 ```
 
-### Application Features
+The dataset and training outputs are stored separately and are not part of the application source repository.
 
-#### Image Detection
+## 8. Local Setup
 
-Implemented functionality:
+### Prerequisites
 
-- Upload JPG, JPEG and PNG images.
-- Configure the confidence threshold.
-- Run YOLO11 inference.
-- Generate bounding boxes and class labels.
-- Display annotated images.
-- Display detected classes and confidence scores.
-- Download annotated images.
+- Python 3.14
+- uv
+- FFmpeg
+- Git
 
-#### Video Detection
+### Clone the repository
 
-Implemented functionality:
+```bash
+git clone https://github.com/davidmba819/PPE.git
+cd PPE
+```
 
-- Upload MP4, AVI, MOV and MKV videos.
-- Read uploaded videos using OpenCV.
-- Extract video frames sequentially.
-- Run YOLO11 inference on individual frames.
-- Generate annotated frames.
-- Write processed frames into an output video.
-- Display the processed-frame count.
-- Provide an annotated video download.
+### Install dependencies
 
-The video inference process has successfully completed during local testing.
+```bash
+uv sync
+```
 
-**Outstanding issue:** The generated MP4 uses OpenCV's `mp4v` codec. The browser currently reports that it cannot find a supported video format and MIME type. H.264 encoding using FFmpeg is the planned fix. Browser playback has not yet been confirmed.
+### Run the application
 
-The basic video-processing implementation does not preserve original audio.
+```bash
+uv run streamlit run src/app.py
+```
 
-## 7. Development Challenges and Setbacks
+Streamlit will provide a local URL through which the application can be accessed.
 
-Several technical issues were encountered during development.
+## 9. Deployment
 
-| Issue | Cause | Resolution or Current Status |
-|---|---|---|
-| PyTorch installation timeout | Large package download and unstable network connection | Retried dependency installation with a longer timeout |
-| Model checkpoint not found | Incorrect relative path from the `src` directory | Corrected project-root resolution using `pathlib` |
-| Streamlit slider error | Zero was supplied as the slider step | Changed step to 0.05 |
-| Deprecated Streamlit image argument | `use_column_width` is no longer supported | Replaced with `width="stretch"` |
-| YOLO prediction argument error | Used `img_size` instead of `imgsz` | Corrected the argument |
-| Dataset inference took too long | The test script processed thousands of images | Limited inference testing to five images |
-| Existing image annotations | Some uploaded images already contained embedded bounding boxes | Switched to clean images for functional testing |
-| Video browser playback failure | Generated MP4 codec is not reliably supported by browsers | H.264 conversion with FFmpeg remains to be implemented |
+The application is deployed using Streamlit Community Cloud.
 
-These challenges helped validate the environment, model-loading process, inference pipeline and application workflow.
+**Live application:** https://ppeguard.streamlit.app/
 
-## 8. Current Development Status
+The deployment includes:
+- The trained YOLO11 model.
+- Python application dependencies.
+- OpenCV video processing.
+- FFmpeg for H.264 conversion.
+- Streamlit application interface.
 
-| Component | Status |
-|---|---|
-| Dataset preparation | Completed |
-| YOLOv8 experimentation | Completed |
-| YOLO11 experimentation | Completed |
-| YOLO26 experimentation | Completed |
-| Model comparison | Completed |
-| Final model selection | Completed |
-| Model artifact copied locally | Completed |
-| Python environment setup | Completed |
-| Dependency installation | Completed |
-| Local model loading | Completed |
-| Local image inference | Completed |
-| Streamlit image detection | Working |
-| Image result download | Implemented |
-| Video frame inference | Working |
-| Annotated video generation | Working |
-| Browser video playback | Requires codec fix |
-| Docker packaging | Not started |
-| Deployment | Not started |
+Image and video detection have been tested in the deployed application.
 
-## 9. Remaining Development Roadmap
+## 10. Model and Application Limitations
 
-### Phase 1: Complete the MVP
+The current system performs object detection, not complete PPE compliance assessment.
 
-- Fix browser video playback through H.264 encoding.
-- Verify downloaded video playback.
-- Test image and video uploads with different files.
-- Handle invalid uploads and video-processing errors.
-- Test confidence-threshold adjustments.
-
-### Phase 2: Application Refinement
-
-- Improve the Streamlit interface.
-- Improve detection-result presentation.
-- Add useful detection summaries.
-- Improve processing feedback for longer videos.
-
-### Phase 3: Containerization
-
-- Create a Dockerfile.
-- Build and test the Docker image.
-- Verify model loading and inference inside the container.
-
-### Phase 4: Deployment
-
-- Prepare the application for Hugging Face Spaces.
-- Configure model artifact availability.
-- Deploy the application.
-- Test the deployed image and video workflows.
-
-## 10. Project Scope and Limitations
-
-This project currently performs object detection, not complete PPE compliance assessment.
-
-Although the model detects classes such as `Hardhat`, `NO-Hardhat`, `Safety Vest` and `NO-Safety Vest`, it does not implement:
+Although it detects classes such as `Hardhat`, `NO-Hardhat`, `Safety Vest` and `NO-Safety Vest`, it does not currently implement:
 
 - Person-to-PPE association.
 - Individual worker compliance tracking.
 - Persistent object tracking across video frames.
 - Automated safety violation alerts.
-- Real-time surveillance or monitoring.
+- Real-time surveillance and monitoring.
 
-The current application should therefore be treated as a prototype object detection system, not a production-certified construction-site safety monitoring solution.
+Additional limitations include:
+- Some objects may be missed because of relatively low recall.
+- Small and distant objects are more difficult to detect.
+- PPE classification can be inconsistent in certain scenes.
+- Overlapping objects can produce challenging detection cases.
+- The model has not been validated for safety-critical operational use.
 
-## 11. Conclusion
+The application should be treated as a computer vision prototype rather than a production-certified construction-site safety monitoring system.
 
-The project has progressed from dataset preparation and comparative YOLO experimentation to a locally working Streamlit application.
+## 11. Future Improvements
 
-YOLO11 Nano was selected based on its test-set mAP@50–95 result of 0.391.
+Potential future improvements include:
 
-The trained model successfully loads and performs local image and video inference. Image detection and annotated-image downloading are working. Video processing and annotated-video generation also work, but browser playback still requires a codec correction.
+- Improving detection performance through additional experimentation.
+- Testing inference performance on longer videos.
+- Adding object tracking across video frames.
+- Improving detection-result summaries.
+- Adding person-to-PPE association.
+- Implementing PPE compliance assessment.
+- Improving application monitoring and error handling.
+- Further Docker-based deployment and testing.
 
-The next priority is to complete video playback, validate the full application and proceed to Docker packaging and deployment.
+## 12. Conclusion
+
+The PPE Detection System demonstrates an end-to-end computer vision workflow, from dataset preparation and comparative YOLO experimentation to model selection, application development and deployment.
+
+YOLO11 Nano was selected following comparative evaluation of YOLOv8, YOLO11 and YOLO26.
+
+The deployed Streamlit application currently supports construction-site image and video detection, annotated result visualization and downloads.
